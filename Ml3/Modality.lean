@@ -17,6 +17,19 @@ def OpenMultiplication {τ : Sort u} (t : Open (Open τ)) : Open τ :=
 theorem OpenRightUnitLaw {τ : Sort u} : ∀ t : Open τ, OpenMultiplication (OpenUnit t) = t := by
   intro t
   unfold OpenMultiplication OpenUnit OpenBind
+  -- We should be careful about simp here: we want to make sure this doesn't use
+  -- classical reasoning. If we do enable classical reasoning, then Lean becomes
+  -- Boolean (i.e. there are only two propositions, True and False), and hence
+  -- is uninteresting for our open and closed modalities. (In particular, p
+  -- above will either be True or False, and hence there will be only two
+  -- possible ways of defining Open, both of which will be uninteresting: one is
+  -- the constant unit monad (corresponding to p = false), and the other is the
+  -- identity monad (corresponding to p = true).)
+  -- In other words, if we allow classical reasoning, then the models of our
+  -- type theory are really boring. We can model either Set^1 (i.e. just Set) by
+  -- taking p = True, and Set^0 (i.e. the terminal category) by taking p =
+  -- False. We want more than this! So we must avoid classical reasoning in our
+  -- proofs.
   simp
 
 def IsIso {α β : Sort u} (f : α → β) : Prop :=
