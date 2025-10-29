@@ -59,6 +59,19 @@ def GluedMonad
     sorry
     -- fracture.g (M X.fst, N Y.fst, fun x => m ((mFunctorAction M g) x))
 
+theorem p_implies_p_is_true (P : Prop) : P → (P = True) := by
+  intro p
+  apply propext
+  apply Iff.intro
+  {
+    intro q
+    apply True.intro
+  }
+  {
+    intro t
+    assumption
+  }
+
 -- ----
 
 -- def MonadMorphism (T1 T2 : Type u → Type u) := (A : OpenU) → T1 (Closed A.fst) → Closed (T2 A.fst)
