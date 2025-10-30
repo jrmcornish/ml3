@@ -1,8 +1,10 @@
 import Ml3.Closed
 import Ml3.Open
 
-#check Open
+open Ml3.OpenModality
+open Ml3.ClosedModality
 
+-- axiom fracture : Iso (Sort u) (Σ' (A : CloseU.{u}) (B : OpenU.{u}), A.fst → (Closed B.fst))
 axiom fracture : False
 
 def MonadMorphism (T1 : Type → Type) [Monad T1] (T2 : Type → Type) [Monad T2] :=
@@ -13,10 +15,3 @@ def GluedMonad
   {T : Type → Type} [Monad N]
   (m : MonadMorphism M N)
   (A : Type) : Type := sorry
-
-def GluedSymSig (A : Type) : Type := GluedMonad monad_morph A
-#check GluedSymSig
-
-instance : Monad GluedSymSig where
-  pure := sorry
-  bind := sorry

@@ -1,6 +1,7 @@
 import Ml3.Postulates
 
-section OpenModality
+namespace Ml3.OpenModality
+
 variable (p : Prop)
 
 def Open (τ : Sort u) : Sort u := p → τ
@@ -46,4 +47,8 @@ theorem OpenIdempotent {τ : Sort u} : IsIso (OpenFunctor p (OpenUnit p (τ := �
   . intro y
     unfold OpenFunctor OpenUnit OpenMultiplication OpenBind
     simp
-end OpenModality
+
+
+def OpenUniverse.{u} := Σ' (τ : Type u), Open p τ
+
+end Ml3.OpenModality

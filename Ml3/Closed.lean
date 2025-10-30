@@ -2,6 +2,8 @@ import Mathlib.Tactic.Lemma
 import Mathlib.Tactic.Tauto
 import Mathlib.Data.Quot
 
+namespace Ml3.ClosedModality
+
 variable (p : Prop)
 
 -- Equivalence relation stuff
@@ -199,3 +201,7 @@ fun f π => match π with
 lemma idempotencyClosedProp : ∀ (q : Prop), closedProp p (closedProp p q) ↔ (closedProp p q) := by
   intro q
   constructor <;> intro x <;> cases x <;> tauto
+
+def ClosedUniverse.{u} := Σ' (τ : Type u), ClosedModality p τ
+
+end Ml3.ClosedModality
