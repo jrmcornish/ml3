@@ -71,9 +71,11 @@ lemma relationIsSymm {α : Sort u}: ∀ {x y : PSum α p}, relation x y → rela
 
 -- Monad structure
 
-@[simp] def ClosedModality (α : Sort u) := Quotient (ClosedSetoid α)
+@[simp] def ClosedModality (α : Type u) := Quotient (ClosedSetoid α)
 
-lemma closedCrush (α : Sort u) : ∀ x y : ClosedModality α, p → x = y := by
+#check ClosedModality
+
+lemma closedCrush (α : Type u) : ∀ x y : ClosedModality α, p → x = y := by
   intros x y π
   obtain ⟨a, eq1⟩ := Quot.exists_rep x
   obtain ⟨b, eq2⟩ := Quot.exists_rep y
@@ -85,15 +87,15 @@ lemma closedCrush (α : Sort u) : ∀ x y : ClosedModality α, p → x = y := by
   · cases a <;> unfold  relation <;> simp
   · unfold relation; simp
 
-def unit {α : Sort u} : α → ClosedModality α :=
+def unit {α : Type u} : α → ClosedModality α :=
   fun a => Quotient.mk (ClosedSetoid α) (PSum.inl a)
 
-def KleisliLiftAux {α β : Sort u} (f : α → ClosedModality β) : α ⊕' p → ClosedModality β :=
+def KleisliLiftAux {α β : Type u} (f : α → ClosedModality β) : α ⊕' p → ClosedModality β :=
 fun x => match x with
          | PSum.inl v => f v
          | PSum.inr π => Quotient.mk (ClosedSetoid β) (PSum.inr π)
 
-lemma aux' {α : Sort u} : forall x x' : α ⊕' p, transitiveClosure relation x x' →
+lemma aux' {α : Type u} : forall x x' : α ⊕' p, transitiveClosure relation x x' →
 (relation x x') ∨ p := by
   intros x x' h
   induction h with
@@ -110,14 +112,14 @@ lemma aux' {α : Sort u} : forall x x' : α ⊕' p, transitiveClosure relation x
       | PSum.inl v1, PSum.inl v2 => unfold relation at h1 h2; simp_all
       | PSum.inr _, _ | _, PSum.inr _ => tauto
 
-lemma aux {α : Sort u} : forall v v' : α,
+lemma aux {α : Type u} : forall v v' : α,
 transitiveClosure relation (PSum.inl v) (PSum.inl v') → (v = v') ∨ p := by
 intros v v' h
 cases (aux' (PSum.inl v) (PSum.inl v') h) with
 | inl h' => unfold relation at h'; tauto
 | inr _ => tauto
 
-lemma KleisliLiftAuxLemma {α β : Sort u} (f : α → ClosedModality β) : ∀ (a b : α ⊕' p),
+lemma KleisliLiftAuxLemma {α β : Type u} (f : α → ClosedModality β) : ∀ (a b : α ⊕' p),
 a ≈ b → KleisliLiftAux f a = KleisliLiftAux f b := by
   intros a b h
   match a, b with
@@ -129,17 +131,17 @@ a ≈ b → KleisliLiftAux f a = KleisliLiftAux f b := by
     | PSum.inl v, PSum.inr π | PSum.inr π, PSum.inl v' | PSum.inr π, PSum.inr π'
       => apply closedCrush; assumption
 
-def KleisliLift {α β : Sort u} (f : α → ClosedModality β) : ClosedModality α → ClosedModality β :=
+def KleisliLift {α β : Type u} (f : α → ClosedModality β) : ClosedModality α → ClosedModality β :=
   Quotient.lift (KleisliLiftAux f) (KleisliLiftAuxLemma f)
 
--- Monad laws
+-- Monad laws + idempotency
 
 lemma unitLaw1 {A B} : ∀ (f : A → ClosedModality B) (x : A), (KleisliLift f) (unit x) = f x := by
-  intros f x; tauto
+  intros f x; rfl
 
-lemma unitLaw2 {A} : forall (x : ClosedModality A), (KleisliLift unit) x = x := by
+lemma unitLaw2 {A} : ∀ (x : ClosedModality A), (KleisliLift unit) x = x := by
   intro x
-  obtain ⟨v, eq⟩ := Quot.exists_rep x
+  obtain ⟨v, eq⟩ := Quotient.exists_rep x
   cases v
   case inl v =>
     subst eq
@@ -147,7 +149,7 @@ lemma unitLaw2 {A} : forall (x : ClosedModality A), (KleisliLift unit) x = x := 
   case inr π =>
     apply closedCrush; assumption
 
-lemma bindLaw {A  B C} : ∀ (f : A → ClosedModality B) (g : B → ClosedModality C),
+lemma bindLaw {A B C} : ∀ (f : A → ClosedModality B) (g : B → ClosedModality C),
 (KleisliLift g) ∘ (KleisliLift f) = KleisliLift (KleisliLift g ∘ f) := by
   intros f g
   apply funext
@@ -158,3 +160,44 @@ lemma bindLaw {A  B C} : ∀ (f : A → ClosedModality B) (g : B → ClosedModal
     apply closedCrush; assumption
   case inl v =>
     subst eq; tauto
+
+def closedBind {A : Type u} : ClosedModality (ClosedModality A) → ClosedModality A := KleisliLift (fun x => x)
+
+lemma relativeClosedIdempotent {A B : Type u} : ∀ (f : ClosedModality A → ClosedModality B), (KleisliLift (f ∘ unit)) = f := by
+intro f
+apply funext; intro x
+obtain ⟨v, eq⟩ := Quot.exists_rep x
+cases v
+case inr π => apply closedCrush; assumption
+case inl v => subst eq; tauto
+
+lemma closedIdempotent {A} : ∀ x : ClosedModality (ClosedModality A), ((unit) ∘ (closedBind)) x = x := by
+  intro x
+  simp
+  obtain ⟨v, eq⟩ := Quotient.exists_rep x
+  subst eq
+  unfold closedBind
+  unfold KleisliLift
+  simp
+  cases v
+  case inr π => apply closedCrush; assumption
+  case inl v =>
+    obtain ⟨v', eq⟩ := Quotient.exists_rep v
+    cases v'
+    case inr π  => apply closedCrush; assumption
+    case inl v1 => tauto
+
+-- Propositional closed modality
+
+def closedProp (q : Prop) : Prop := q ∨ p
+
+def unitClosedProp (q : Prop) : q → closedProp q := fun π => Or.inl π
+
+def liftClosedProp (q1 q2 : Prop) : (q1 → closedProp q2) → (closedProp q1 → closedProp q2) :=
+fun f π => match π with
+              |Or.inl x => f x
+              |Or.inr x => Or.inr x
+
+lemma idempotencyClosedProp : ∀ (q : Prop), closedProp (closedProp q) ↔ (closedProp q) := by
+  intro q
+  constructor <;> intro x <;> cases x <;> tauto
