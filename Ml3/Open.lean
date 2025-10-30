@@ -43,38 +43,3 @@ theorem OpenIdempotent {τ : Sort u} : IsIso (OpenFunctor (OpenUnit (τ := τ)))
   . intro y
     unfold OpenFunctor OpenUnit OpenMultiplication OpenBind
     simp
-
-
-
-
-inductive ClosedUnquotiented (τ : Sort u) where
-  | inl : p → ClosedUnquotiented τ
-  | inr : τ → ClosedUnquotiented τ
-
-namespace ClosedUnquotiented
-
-def Relation {τ : Sort u} (x y : ClosedUnquotiented τ) : Prop :=
-  match x, y with
-  | inr t1, inr t2 => t1 = t2
-  | _, _ => True
-
--- TODO: understand this better
-inductive TransitiveClosure {α : Sort u} (r : α → α → Prop) : α → α → Prop where
-| base x y  : r x y → TransitiveClosure r x y
-| step x y z : TransitiveClosure r x y →  r y z → TransitiveClosure r x z
-
-
-open TransitiveClosure
-
-def ClosedSetoid (τ : Sort u) : Setoid (ClosedUnquotiented τ) where
-  r := TransitiveClosure Relation
-  iseqv := by sorry
-
-
-def MyQuotient (τ : Sort u) : Sort u :=
-  Quotient (ClosedSetoid τ)
-
-
-end ClosedUnquotiented
-
-def Closed (τ : Sort u) : Sort u := sorry --Quotient.{u}
