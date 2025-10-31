@@ -1,35 +1,16 @@
 import Mathlib.Data.NNReal.Basic
 
+import Ml3.Open
+import Ml3.Closed
+
+open Ml3.OpenModality
+open Ml3.ClosedModality
 
 structure Iso (α β : Sort u) : Type u where
   (f : α → β)
   (g : β → α)
   (left: ∀ x, g (f x) = x)
   (right: ∀ y, f (g y) = y)
-
--- TODO: need these to be monads
-axiom Closed : Sort u → Sort u
-axiom Open : Sort u → Sort u
-
-axiom ClosedIdempotent : ∀ (α : Sort u), Iso (Closed (Closed α)) (Closed α)
-axiom OpenIdempotent : ∀ (α : Sort u), Iso (Open (Open α)) (Open α)
-
-def CloseU.{u} := Σ τ : Sort u, Iso (Closed τ) τ
-def OpenU.{u} := Σ τ : Sort u, Iso (Open τ) τ
-
-noncomputable def ClosedFactor (α : Sort u) : CloseU.{u} :=
-  ⟨Closed α, ClosedIdempotent α⟩
-
-noncomputable def OpenFactor (α : Sort u) : OpenU.{u} :=
-  ⟨Open α, OpenIdempotent α⟩
-
-class OpenMonad (M : OpenU → OpenU) where
-  pure : α.fst → (M α).fst
-  bind : (M α).fst → (α.fst → (M β).fst) → (M β).fst
-
-class ClosedMonad (M : CloseU → CloseU) where
-  pure : α.fst → (M α).fst
-  bind : (M α).fst → (α.fst → (M β).fst) → (M β).fst
 
 -- This is not the elementary definition of monad morphism T1 => T2 defined on
 -- the same category. Instead it uses a more general notion defined when T1 and
@@ -46,8 +27,6 @@ class ClosedMonad (M : CloseU → CloseU) where
 -- (where here fst is just the inclusion of OpenU into Sort u).
 def MonadMorphism (T1 : CloseU → CloseU) [ClosedMonad T1] (T2 : OpenU → OpenU) [OpenMonad T2] :=
   (A : OpenU) → (T1 (ClosedFactor A.fst)).fst → (ClosedFactor (T2 A).fst).fst
-
-axiom fracture : Iso (Sort u) (Σ' (A : CloseU.{u}) (B : OpenU.{u}), A.fst → (Closed B.fst))
 
 -- Problem: How can we do (mFunctorAction M g)
 def GluedMonad
@@ -80,9 +59,7 @@ def GluedMonad
 
 -------
 
-def X := ℝ
-def Y := ℝ
-def G := ℝ
+variable (X Y G : Type)
 
 -- Signature
 
@@ -96,7 +73,7 @@ inductive SymSig (A : Type) : Type where
 
 namespace SymSig
 
-def SymBind {A B : Type} (x : SymSig A) (h : A → SymSig B) : SymSig B :=
+def SymBind {A B : Type} (x : SymSig X Y G A) (h : A → SymSig X  Y G B) : SymSig X Y G B :=
   match x with
   | ret a => h a
   | α g x k => α g x (fun x' => SymBind (k x') h)
@@ -105,16 +82,16 @@ def SymBind {A B : Type} (x : SymSig A) (h : A → SymSig B) : SymSig B :=
   | f x k => f x (fun y => SymBind (k y) h)
   | γ x k => γ x (fun g' => SymBind (k g') h)
 
-instance : Monad SymSig where
+instance : Monad (SymSig X Y G) where
   pure := ret
-  bind := SymBind
+  bind := SymBind X Y G
 
 -- Generic effects
-def α_op (g : G) (x : X) : SymSig X := α g x (fun x' => ret x')
-def β_op (g : G) (y : Y) : SymSig Y := β g y (fun y' => ret y')
-def inv_op (g : G) : SymSig G := inv g (fun g' => ret g')
-def f_op (x : X) : SymSig Y := f x (fun y => ret y)
-def γ_op (x : X) : SymSig G := γ x (fun g' => ret g')
+def α_op (g : G) (x : X) : SymSig X Y G X := α g x (fun x' => ret x')
+def β_op (g : G) (y : Y) : SymSig X Y G Y := β g y (fun y' => ret y')
+def inv_op (g : G) : SymSig X Y G G := inv g (fun g' => ret g')
+def f_op (x : X) : SymSig X Y G Y := f x (fun y => ret y)
+def γ_op (x : X) : SymSig X Y G G := γ x (fun g' => ret g')
 
 --- Math monad
 
@@ -145,14 +122,14 @@ instance : Monad GluedSymSig where
   pure := sorry
   bind := sorry
 
-def model (x : X) : SymSig Y :=
+def model (x : X) : SymSig X Y G Y :=
   do
-    let g <- γ_op x
-    let g' <- inv_op g
-    let x' <- α_op g' x
-    let y <- f_op x'
+    let g <- γ_op X Y G x
+    let g' <- inv_op X Y G g
+    let x' <- α_op X Y G g' x
+    let y <- f_op X Y G x'
 
-    let y' <- β_op g y
+    let y' <- β_op X Y G g y
     return y'
 
 end SymSig

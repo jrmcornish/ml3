@@ -49,6 +49,4 @@ theorem OpenIdempotent {τ : Sort u} : IsIso (OpenFunctor p (OpenUnit p (τ := �
     simp
 
 
-def OpenUniverse.{u} := Σ' (τ : Type u), Open p τ
-
 end Ml3.OpenModality
